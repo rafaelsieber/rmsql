@@ -162,7 +162,7 @@ Options:
 ### SQL Editor
 
 In SQL editor mode (`i`):
-- Type your SQL queries
+- Type your SQL queries (all characters including 'q' work normally)
 - `Enter`: Execute query
 - `↑`/`↓`: Navigate command history
 - `Esc`: Exit editor mode

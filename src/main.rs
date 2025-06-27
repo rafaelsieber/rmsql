@@ -315,7 +315,6 @@ impl App {
     
     fn handle_sql_editor_key(&mut self, key_code: KeyCode) -> Result<()> {
         match key_code {
-            KeyCode::Char('q') => self.should_quit = true,
             KeyCode::Esc => {
                 // Exit SQL editor mode, go back to previous mode
                 if self.navigation.current_table.is_some() {
