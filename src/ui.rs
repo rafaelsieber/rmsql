@@ -168,17 +168,33 @@ impl AppUI {
             ])
             .split(area);
         
-        // Draw column info
-        let column_info = navigation.table_columns.join(" | ");
+        // Get visible column range based on expanded mode and horizontal scroll
+        let (start_col, end_col) = if navigation.expanded_columns {
+            navigation.get_visible_columns()
+        } else {
+            (0, navigation.table_columns.len())
+        };
+        
+        // Draw column info - show only visible columns in expanded mode
+        let column_info = if navigation.expanded_columns {
+            let visible_cols = &navigation.table_columns[start_col..end_col];
+            let info = visible_cols.join(" | ");
+            format!("Columns {}-{} of {}: {}", start_col + 1, end_col, navigation.table_columns.len(), info)
+        } else {
+            navigation.table_columns.join(" | ")
+        };
+        
         let columns_widget = Paragraph::new(column_info)
             .block(Block::default().borders(Borders::ALL).title("Columns"))
             .style(Style::default().fg(Color::Cyan));
         f.render_widget(columns_widget, chunks[0]);
         
-        // Prepare table data
+        // Prepare table headers - only visible columns
         let header = navigation
             .table_columns
             .iter()
+            .skip(start_col)
+            .take(end_col - start_col)
             .map(|col| {
                 // Extract just the column name (before the type info in parentheses)
                 let name = col.split(" (").next().unwrap_or(col);
@@ -186,12 +202,15 @@ impl AppUI {
             })
             .collect::<Vec<_>>();
         
+        // Prepare table rows - only visible columns
         let rows: Vec<Row> = navigation
             .table_rows
             .iter()
             .map(|row| {
                 Row::new(
                     row.iter()
+                        .skip(start_col)
+                        .take(end_col - start_col)
                         .map(|cell| {
                             // Truncate long values based on expansion mode
                             let max_len = if navigation.expanded_columns { 100 } else { 30 };
@@ -208,25 +227,25 @@ impl AppUI {
             .collect();
         
         // Calculate column widths based on expansion mode
-        let num_cols = header.len().max(1);
+        let num_visible_cols = header.len().max(1);
         let available_width = chunks[1].width.saturating_sub(2); // Account for borders
         
         let constraints = if navigation.expanded_columns {
             // In expanded mode, give more space to columns (minimum 20 chars each)
             let min_col_width = 20u16;
-            let total_min_width = min_col_width * num_cols as u16;
+            let total_min_width = min_col_width * num_visible_cols as u16;
             
             if total_min_width <= available_width {
                 let extra_width = available_width - total_min_width;
-                let extra_per_col = extra_width / num_cols as u16;
-                vec![Constraint::Length(min_col_width + extra_per_col); num_cols]
+                let extra_per_col = extra_width / num_visible_cols as u16;
+                vec![Constraint::Length(min_col_width + extra_per_col); num_visible_cols]
             } else {
-                vec![Constraint::Length(min_col_width); num_cols]
+                vec![Constraint::Length(min_col_width); num_visible_cols]
             }
         } else {
             // In normal mode, distribute space evenly
-            let col_width = available_width / num_cols as u16;
-            vec![Constraint::Length(col_width); num_cols]
+            let col_width = available_width / num_visible_cols as u16;
+            vec![Constraint::Length(col_width); num_visible_cols]
         };
         
         let table_name = navigation
@@ -234,6 +253,21 @@ impl AppUI {
             .as_ref()
             .map(|s| s.as_str())
             .unwrap_or("Unknown");
+        
+        let title = if navigation.expanded_columns {
+            format!(
+                "Data from '{}' [EXPANDED {}-{}/{}] (←→ navigate, Space compress, h back)", 
+                table_name,
+                start_col + 1,
+                end_col,
+                navigation.table_columns.len()
+            )
+        } else {
+            format!(
+                "Data from '{}' (h to go back, Space to expand, showing first 100 rows)", 
+                table_name
+            )
+        };
         
         let table = Table::new(rows, constraints)
             .header(
@@ -244,10 +278,7 @@ impl AppUI {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Data from '{}' {} (h to go back, Space to {}, showing first 100 rows)", 
-                           table_name,
-                           if navigation.expanded_columns { "[EXPANDED]" } else { "" },
-                           if navigation.expanded_columns { "compress" } else { "expand" }))
+                    .title(title)
             )
             .style(Style::default().fg(Color::White))
             .row_highlight_style(

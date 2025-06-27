@@ -8,7 +8,7 @@ use crossterm::{
 use mysql::{Pool, OptsBuilder, SslOpts};
 use ratatui::{
     backend::CrosstermBackend,
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout, Size},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
@@ -97,7 +97,7 @@ impl App {
             
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    self.handle_key_event(key.code)?;
+                    self.handle_key_event(key.code, terminal)?;
                 }
             }
         }
@@ -105,7 +105,7 @@ impl App {
         Ok(())
     }
     
-    fn handle_key_event(&mut self, key_code: KeyCode) -> Result<()> {
+    fn handle_key_event(&mut self, key_code: KeyCode, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> {
         // Handle SQL editor mode separately
         if self.navigation.mode == ViewMode::SqlEditor {
             return self.handle_sql_editor_key(key_code);
@@ -152,13 +152,28 @@ impl App {
             
             // Toggle column expansion (only in TableData mode)
             KeyCode::Char(' ') => {
-                if self.navigation.mode == ViewMode::TableData {
+                if self.navigation.mode == ViewMode::TableData && !self.navigation.table_columns.is_empty() {
                     self.navigation.toggle_expanded_columns();
                     if self.navigation.expanded_columns {
                         // Calculate visible columns based on terminal width
-                        // For now, use a default of 3-4 columns
-                        self.navigation.set_visible_columns(3);
-                        self.status_message = "Expanded mode: Use ←→ arrows to navigate columns, Esc to go back".to_string();
+                        // Minimum 20 chars per column + borders and padding
+                        let terminal_size = terminal.size().unwrap_or_else(|_| Size { 
+                            width: 80, height: 24 
+                        });
+                        let terminal_width = terminal_size.width;
+                        let available_width = terminal_width.saturating_sub(4); // Account for borders
+                        let min_col_width = 22u16; // 20 + some padding
+                        let max_visible_cols = (available_width / min_col_width).max(1) as usize;
+                        
+                        // Don't show more columns than we actually have
+                        let optimal_cols = max_visible_cols.min(self.navigation.table_columns.len());
+                        self.navigation.set_visible_columns(optimal_cols);
+                        
+                        self.status_message = format!(
+                            "Expanded mode: {} columns ({}px wide), use ←→ to navigate, Space to exit", 
+                            optimal_cols,
+                            terminal_width
+                        );
                     } else {
                         self.status_message = "Normal mode: Press Space to expand columns".to_string();
                     }
@@ -419,7 +434,7 @@ impl App {
             let (start, end) = self.navigation.get_visible_columns();
             let total = self.navigation.table_columns.len();
             self.status_message = format!(
-                "Columns {}-{} of {} | Use ←→ to scroll, Space to exit expanded mode", 
+                "Expanded: Columns {}-{} of {} | ←→ scroll, Space exit, h back", 
                 start + 1, 
                 end, 
                 total

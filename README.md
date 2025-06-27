@@ -37,12 +37,21 @@ A modern, interactive MySQL client with a terminal interface inspired by Vim, bu
     - Performance metrics (execution time)
     - Detailed error messages
 
-#### 3. Dynamic Column Expansion
+#### 3. Dynamic Column Expansion & Horizontal Scrolling
 - **Key**: `Space` (in data view mode)
 - Toggle between normal and expanded column views
-- In expanded view:
-    - Horizontal navigation with `←`/`→`
-    - Better for viewing long text data
+- **Normal mode**: Shows all columns compressed to fit screen
+- **Expanded mode**: 
+    - Shows fewer columns with more space for each
+    - Automatic calculation of optimal columns based on terminal width
+    - Horizontal navigation with `←`/`→` arrows to scroll through columns
+    - Perfect for tables with many columns or wide data
+    - Status bar shows current column range (e.g., "Columns 1-3 of 12")
+    - Better readability for long text data
+
+**Note:** In table data view, arrow key behavior changes based on expansion mode:
+- **Normal mode**: `←`/`→` work as back/forward navigation
+- **Expanded mode**: `←`/`→` scroll horizontally through columns, `h` for back navigation
 
 #### 4. Advanced Connection Management
 - Automatically saves used connections
@@ -147,6 +156,7 @@ Options:
 | `r`         | Refresh current view         |
 | `i`         | Enter SQL editor             |
 | `Space`     | Toggle column expansion (data mode) |
+| `←`/`→`     | Horizontal scroll (expanded mode) |
 | `q`         | Quit                         |
 | `?`         | Show help                    |
 
