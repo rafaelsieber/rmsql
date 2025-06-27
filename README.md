@@ -1,289 +1,295 @@
-# RMSQL - Cliente MySQL Interativo esti## 📁 Sistema de Arquivos
+# RMSQL - Interactive MySQL Client (Vim-style)
 
-O RMSQL organiza seus dados em:
+<!-- Screenshot placeholder -->
+![Screenshot](screenshot.png)
 
-### Configurações (`~/.config/rmsql/`)
-- **`connections.json`**: Conexões salvas
-- **`user_config.json`**: Configurações do usuário e bancos cadastrados
+## 📁 File System Structure
 
-### Cache (`~/.cache/rmsql/`)
-- **`sql_history.json`**: Histórico completo de comandos SQL cliente MySQL moderno e interativo com interface de terminal, inspirado no Vim, construído em Rust com sistema avançado de configuração e histórico.SQL - Cliente MySQL Interativo estilo Vim
+RMSQL organizes its data into:
 
-Um cliente MySQL moderno e interativo com interface de terminal, inspirado no Vim, construído em Rust com sistema avançado de configuração e histórico.
-
-## 🚀 Funcionalidades
-
-### ✨ Principais Recursos
-
-#### 1. Sistema de Configuração Inteligente
-- **Auto-descoberta** de bancos de dados
-- **Histórico persistente** de comandos SQL
-- **Favoritos** e acesso rápido a bancos frequentes
-- **Configurações personalizáveis** por usuário
-
-#### 2. Editor SQL Interativo
-- **Tecla**: `i` (para entrar no modo editor)
-- Digite consultas SQL personalizadas
-- **Recursos:**
-  - Histórico de consultas persistente entre sessões
-  - Navegação no histórico com `↑`/`↓`
-  - Execução com `Enter`
-  - Suporte a todas as consultas SQL (SELECT, INSERT, UPDATE, DELETE, etc.)
-  - Métricas de performance (tempo de execução)
-  - Mensagens de erro detalhadas
-
-#### 3. Expansão Dinâmica de Colunas
-- **Tecla**: `Espaço` (no modo visualização de dados)
-- Alterna entre visualização normal e expandida das colunas
-- Na visualização expandida:
-  - Navegação horizontal com `←`/`→`
-  - Melhor para visualizar dados com texto longo
-
-#### 4. Gerenciamento Avançado de Conexões
-- Salva automaticamente conexões utilizadas
-- Interface intuitiva para gerenciar múltiplas conexões
-- Reconexão automática em caso de perda de conexão
-
-## 📁 Sistema de Arquivos
-
-O RMSQL organiza seus dados em:
-
-### Configurações (`~/.config/rmsql/`)
-- **`connections.json`**: Conexões salvas
-- **`user_config.json`**: Configurações do usuário e bancos cadastrados
+### Configurations (`~/.config/rmsql/`)
+- **`connections.json`**: Saved connections
+- **`user_config.json`**: User settings and registered databases
 
 ### Cache (`~/.cache/rmsql/`)
-- **`sql_history.json`**: Histórico completo de comandos SQL
+- **`sql_history.json`**: Complete SQL command history
 
-## Pré-requisitos
+A modern, interactive MySQL client with a terminal interface inspired by Vim, built in Rust with advanced configuration and history systems.
 
-1. **MySQL Server** rodando na máquina
-2. **Rust** instalado (versão 1.70 ou superior)
-3. **Conexão MySQL configurada**
+## 🚀 Features
 
-## Configuração do MySQL (se necessário)
+### ✨ Main Highlights
 
-Para permitir conexão como root sem senha localmente:
+#### 1. Smart Configuration System
+- **Auto-discovery** of databases
+- **Persistent SQL command history**
+- **Favorites** and quick access to frequent databases
+- **User-customizable settings**
+
+#### 2. Interactive SQL Editor
+- **Key**: `i` (to enter editor mode)
+- Type custom SQL queries
+- **Features:**
+    - Persistent query history across sessions
+    - Navigate history with `↑`/`↓`
+    - Execute with `Enter`
+    - Supports all SQL queries (SELECT, INSERT, UPDATE, DELETE, etc.)
+    - Performance metrics (execution time)
+    - Detailed error messages
+
+#### 3. Dynamic Column Expansion
+- **Key**: `Space` (in data view mode)
+- Toggle between normal and expanded column views
+- In expanded view:
+    - Horizontal navigation with `←`/`→`
+    - Better for viewing long text data
+
+#### 4. Advanced Connection Management
+- Automatically saves used connections
+- Intuitive interface for managing multiple connections
+- Auto-reconnect on connection loss
+
+## 📁 File System Structure
+
+RMSQL organizes its data into:
+
+### Configurations (`~/.config/rmsql/`)
+- **`connections.json`**: Saved connections
+- **`user_config.json`**: User settings and registered databases
+
+### Cache (`~/.cache/rmsql/`)
+- **`sql_history.json`**: Complete SQL command history
+
+## Prerequisites
+
+1. **MySQL Server** running locally
+2. **Rust** installed (version 1.70 or higher)
+3. **Configured MySQL connection**
+
+## MySQL Setup (if needed)
+
+To allow root connection without password locally:
 
 ```sql
--- Conecte no MySQL como root
+-- Connect to MySQL as root
 mysql -u root -p
 
--- Execute os comandos:
+-- Run the commands:
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';
 FLUSH PRIVILEGES;
 ```
 
-## Instalação
+## Installation
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/rafaelsieber/rmsql.git
-   cd rmsql
-   ```
+1. Clone the repository:
+     ```bash
+     git clone https://github.com/rafaelsieber/rmsql.git
+     cd rmsql
+     ```
 
-2. Compile o projeto:
-   ```bash
-   cargo build --release
-   ```
+2. Build the project:
+     ```bash
+     cargo build --release
+     ```
 
-## Uso
+## Usage
 
-### Executar como root (recomendado)
+### Run as root (recommended)
 ```bash
 sudo ./target/release/rmsql
 ```
 
-### Executar com usuário específico
+### Run with specific user
 ```bash
-./target/release/rmsql -u seu_usuario -p sua_senha
+./target/release/rmsql -u your_user -p your_password
 ```
 
-### Opções de linha de comando
+### Command-line options
 
 ```bash
 ./target/release/rmsql [OPTIONS]
 
 Options:
-  -h, --host <HOST>          MySQL host [default: localhost]
-  -P, --port <PORT>          MySQL port [default: 3306]
-  -u, --username <USERNAME>  MySQL username (default: root when running with sudo)
-  -p, --password <PASSWORD>  MySQL password
-  -d, --database <DATABASE>  Initial database to connect to
-      --help                 Print help
+    -h, --host <HOST>          MySQL host [default: localhost]
+    -P, --port <PORT>          MySQL port [default: 3306]
+    -u, --username <USERNAME>  MySQL username (default: root when running with sudo)
+    -p, --password <PASSWORD>  MySQL password
+    -d, --database <DATABASE>  Initial database to connect to
+            --help                 Print help
 ```
 
-## Interface e Navegação
+## Interface & Navigation
 
-### Comandos Vim-Inspired
+### Vim-Inspired Commands
 
-| Tecla | Ação |
-|-------|------|
-| `j` ou `↓` | Mover para baixo |
-| `k` ou `↑` | Mover para cima |
-| `h` ou `←` | Voltar/Navegar para trás |
-| `l` ou `→` ou `Enter` | Avançar/Entrar |
-| `g` | Ir para o topo |
-| `G` | Ir para o fim |
-| `r` | Atualizar vista atual |
-| `i` | Entrar no editor SQL |
-| `Espaço` | Alternar expansão de colunas (modo dados) |
-| `q` | Sair |
-| `?` | Mostrar ajuda |
+| Key         | Action                        |
+|-------------|------------------------------|
+| `j` or `↓`  | Move down                    |
+| `k` or `↑`  | Move up                      |
+| `h` or `←`  | Go back/navigate back        |
+| `l` or `→` or `Enter` | Go forward/enter   |
+| `g`         | Go to top                    |
+| `G`         | Go to bottom                 |
+| `r`         | Refresh current view         |
+| `i`         | Enter SQL editor             |
+| `Space`     | Toggle column expansion (data mode) |
+| `q`         | Quit                         |
+| `?`         | Show help                    |
 
-### Modos de Visualização
+### View Modes
 
-| Tecla | Modo | Descrição |
-|-------|------|-----------|
-| `1` | Connections | Gerenciar conexões MySQL |
-| `2` | Databases | Lista bancos de dados da conexão ativa |
-| `3` | Tables | Lista tabelas do banco selecionado |
-| `4` | Data | Mostra dados da tabela selecionada |
+| Key | Mode        | Description                        |
+|-----|-------------|------------------------------------|
+| `1` | Connections | Manage MySQL connections           |
+| `2` | Databases   | List databases of active connection|
+| `3` | Tables      | List tables of selected database   |
+| `4` | Data        | Show data from selected table      |
 
-### Editor SQL
+### SQL Editor
 
-No modo editor SQL (`i`):
-- Digite suas consultas SQL
-- `Enter`: Executar consulta
-- `↑`/`↓`: Navegar no histórico de comandos
-- `Esc`: Sair do modo editor
-- Todas as consultas são automaticamente salvas no histórico
+In SQL editor mode (`i`):
+- Type your SQL queries
+- `Enter`: Execute query
+- `↑`/`↓`: Navigate command history
+- `Esc`: Exit editor mode
+- All queries are automatically saved to history
 
-## 🔧 Recursos Avançados
+## 🔧 Advanced Features
 
-### Histórico Inteligente
-- **Persistência**: Comandos SQL salvos entre sessões
-- **Métricas**: Tempo de execução de cada consulta
-- **Contexto**: Database e conexão utilizados
-- **Filtros**: Histórico por conexão ou database
-- **Limite**: Controle automático do tamanho do histórico
+### Smart History
+- **Persistence**: SQL commands saved across sessions
+- **Metrics**: Execution time for each query
+- **Context**: Database and connection used
+- **Filters**: History by connection or database
+- **Limit**: Automatic history size control
 
-### Configurações Personalizáveis
-- **Auto-salvar histórico**: Ativado por padrão
-- **Limite de entradas**: 1000 comandos (configurável)
-- **Confirmação**: Para queries perigosas (DROP, DELETE)
-- **Tempo de execução**: Exibição opcional de métricas
+### Customizable Settings
+- **Auto-save history**: Enabled by default
+- **Entry limit**: 1000 commands (configurable)
+- **Confirmation**: For dangerous queries (DROP, DELETE)
+- **Execution time**: Optional metrics display
 
-### Gerenciamento de Bancos
-- **Auto-descoberta**: Bancos salvos automaticamente
-- **Favoritos**: Marque bancos importantes
-- **Último acesso**: Rastreamento automático
-- **Acesso rápido**: Para bancos recentes e favoritos
+### Database Management
+- **Auto-discovery**: Databases saved automatically
+- **Favorites**: Mark important databases
+- **Last access**: Automatic tracking
+- **Quick access**: For recent and favorite databases
 
-## Recursos
+## Features
 
-- ✅ Interface vim-inspired intuitiva
-- ✅ Navegação hierárquica (Connections → Databases → Tables → Data)
-- ✅ Editor SQL interativo com histórico persistente
-- ✅ Sistema de configuração avançado
-- ✅ Métricas de performance para queries
-- ✅ Gerenciamento de múltiplas conexões
-- ✅ Auto-descoberta e favoritos de bancos
-- ✅ Expansão dinâmica de colunas
-- ✅ Histórico de comandos persistente
-- ✅ Interface colorizada e responsiva
+- ✅ Intuitive vim-inspired interface
+- ✅ Hierarchical navigation (Connections → Databases → Tables → Data)
+- ✅ Interactive SQL editor with persistent history
+- ✅ Advanced configuration system
+- ✅ Query performance metrics
+- ✅ Multiple connection management
+- ✅ Auto-discovery and favorites for databases
+- ✅ Dynamic column expansion
+- ✅ Persistent command history
+- ✅ Colorful and responsive interface
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 src/
-├── main.rs              # Ponto de entrada e lógica principal
-├── database.rs          # Gerenciamento de conexões e queries MySQL
-├── navigation.rs        # Estado de navegação e controle de modos
-├── ui.rs               # Interface do usuário com ratatui
-├── connection_config.rs # Gerenciamento de configurações de conexão
-├── connection_ui.rs    # Interface para gerenciamento de conexões
-└── user_config.rs      # Sistema de configuração do usuário
+├── main.rs              # Entry point and main logic
+├── database.rs          # MySQL connection and query management
+├── navigation.rs        # Navigation state and mode control
+├── ui.rs                # User interface with ratatui
+├── connection_config.rs # Connection configuration management
+├── connection_ui.rs     # Connection management UI
+└── user_config.rs       # User configuration system
 ```
 
-## 📊 Benefícios
+## 📊 Benefits
 
-### Para Desenvolvedores
-- **Histórico persistente**: Nunca perca comandos SQL importantes
-- **Análise de performance**: Identifique queries lentas
-- **Contexto preservado**: Saiba onde e quando executou cada comando
-- **Interface produtiva**: Navegação rápida estilo vim
+### For Developers
+- **Persistent history**: Never lose important SQL commands
+- **Performance analysis**: Identify slow queries
+- **Context preserved**: Know where and when each command was run
+- **Productive interface**: Fast vim-style navigation
 
-### Para DBAs
-- **Auditoria**: Rastreamento completo de atividades
-- **Debugging**: Histórico de erros com contexto completo
-- **Eficiência**: Acesso rápido a bancos frequentes
-- **Múltiplas conexões**: Gerencie vários ambientes
+### For DBAs
+- **Auditing**: Complete activity tracking
+- **Debugging**: Error history with full context
+- **Efficiency**: Quick access to frequent databases
+- **Multiple connections**: Manage several environments
 
-### Para Times
-- **Consistência**: Configurações padronizadas
-- **Colaboração**: Compartilhamento fácil de configurações
-- **Segurança**: Controle sobre queries perigosas
+### For Teams
+- **Consistency**: Standardized configurations
+- **Collaboration**: Easy sharing of settings
+- **Security**: Control over dangerous queries
 
-## Exemplos de Uso
+## Usage Examples
 
-### Conectar como root via sudo:
+### Connect as root via sudo:
 ```bash
 sudo ./target/release/rmsql
 ```
 
-### Conectar com credenciais específicas:
+### Connect with specific credentials:
 ```bash
-./target/release/rmsql -u admin -p minhasenha -h 192.168.1.100
+./target/release/rmsql -u admin -p mypassword -h 192.168.1.100
 ```
 
-### Navegar:
-1. Inicie o programa
-2. Use `j/k` para navegar pelos bancos
-3. Pressione `Enter` em um banco para ver suas tabelas
-4. Pressione `Enter` em uma tabela para ver seus dados
-5. Use `h` para voltar ao nível anterior
-6. Pressione `q` para sair
+### Navigation:
+1. Start the program
+2. Use `j/k` to navigate databases
+3. Press `Enter` on a database to see its tables
+4. Press `Enter` on a table to view its data
+5. Use `h` to go back to the previous level
+6. Press `q` to quit
 
-## Dependências
+## Dependencies
 
-- `mysql` - Driver MySQL nativo para Rust
-- `ratatui` - Framework moderno para interfaces de terminal
-- `crossterm` - Controle de terminal multiplataforma
-- `anyhow` - Tratamento robusto de erros
-- `clap` - Parser elegante de argumentos CLI
-- `serde` - Serialização/deserialização de dados
-- `chrono` - Manipulação de datas e horários
-- `dirs` - Acesso a diretórios do sistema
-- `uuid` - Geração de identificadores únicos
+- `mysql` - Native MySQL driver for Rust
+- `ratatui` - Modern terminal UI framework
+- `crossterm` - Cross-platform terminal control
+- `anyhow` - Robust error handling
+- `clap` - Elegant CLI argument parser
+- `serde` - Data serialization/deserialization
+- `chrono` - Date and time handling
+- `dirs` - System directory access
+- `uuid` - Unique identifier generation
 
-## 🔐 Privacidade e Segurança
+## 🔐 Privacy & Security
 
-- **Local apenas**: Todos os dados ficam na máquina do usuário
-- **Não compartilhado**: Nenhuma informação enviada para servidores externos
-- **Controle total**: Usuário pode limpar histórico a qualquer momento
-- **Separação clara**: Configurações e cache em diretórios apropriados
-- **Senhas seguras**: Não armazenadas em texto plano
+- **Local only**: All data stays on the user's machine
+- **Not shared**: No information sent to external servers
+- **Full control**: User can clear history at any time
+- **Clear separation**: Config and cache in proper directories
+- **Secure passwords**: Not stored in plain text
 
-## Limitações Atuais
+## Current Limitations
 
-- Mostra até 100 linhas por padrão (configurável)
-- Senhas não são salvas por segurança
-- Interface otimizada para terminais com largura mínima de 80 caracteres
+- Shows up to 100 rows by default (configurable)
+- Passwords are not saved for security
+- Interface optimized for terminals at least 80 characters wide
 
 ## Roadmap
 
-Funcionalidades planejadas:
-- [ ] Exportação de dados (CSV, JSON)
-- [ ] Importação de dados
-- [ ] Editor de esquemas
-- [ ] Backup e restore
-- [ ] Suporte a PostgreSQL
+Planned features:
+- [ ] Data export (CSV, JSON)
+- [ ] Data import
+- [ ] Schema editor
+- [ ] Backup and restore
+- [ ] PostgreSQL support
 - [ ] Plugin system
-- [ ] Temas customizáveis
+- [ ] Customizable themes
 
 ## Troubleshooting
 
-### Erro de conexão
-- Verifique se o MySQL está rodando: `sudo systemctl status mysql`
-- Teste a conexão: `mysql -u root`
-- Verifique as credenciais
+### Connection error
+- Check if MySQL is running: `sudo systemctl status mysql`
+- Test connection: `mysql -u root`
+- Verify credentials
 
-### Erro de permissão
-- Execute com `sudo` para usar credenciais root
-- Ou especifique usuário e senha: `-u usuario -p senha`
+### Permission error
+- Run with `sudo` to use root credentials
+- Or specify user and password: `-u user -p password`
 
-### Interface não funciona corretamente
-- Certifique-se de que o terminal suporta cores
-- Redimensione o terminal se necessário
-- Alguns terminais podem não suportar todos os caracteres especiais
+### Interface issues
+- Make sure your terminal supports colors
+- Resize the terminal if needed
+- Some terminals may not support all special characters
+
