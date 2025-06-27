@@ -1,0 +1,30 @@
+[package]
+name = "rmsql"
+version = "0.1.0"
+edition = "2021"
+authors = ["Rafael <rafael@example.com>"]
+description = "A vim-inspired MySQL client with advanced configuration and persistent history"
+license = "MIT"
+keywords = ["mysql", "database", "cli", "tui", "vim"]
+categories = ["command-line-utilities", "database"]
+repository = "https://github.com/rafaelsieber/rmsql.git"
+homepage = "https://github.com/rafaelsieber/rmsql"
+readme = "README.md"
+
+[[bin]]
+name = "rmsql"
+path = "src/main.rs"
+
+[dependencies]
+mysql = "25.0"
+crossterm = "0.28"
+ratatui = "0.29"
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dirs = "5.0"
+uuid = { version = "1.0", features = ["v4"] }
+libc = "0.2"
+chrono = { version = "0.4", features = ["serde"] }
