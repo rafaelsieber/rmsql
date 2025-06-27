@@ -8,6 +8,10 @@ use crossterm::{
 use mysql::{Pool, OptsBuilder, SslOpts};
 use ratatui::{
     backend::CrosstermBackend,
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, Paragraph},
     Terminal,
 };
 use std::io;
@@ -481,10 +485,12 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     
     // Check if connection parameters were provided via command line
-    let connection_config = if args.host != "localhost" || args.port != 3306 || args.username.is_some() || args.password.is_some() {
-        // Use command line parameters
-        let username = match args.username {
-            Some(user) => user,
+    let use_command_line_args = args.host != "localhost" || args.port != 3306 || args.username.is_some() || args.password.is_some();
+    
+    if use_command_line_args {
+        // Use command line parameters - single attempt
+        let username = match &args.username {
+            Some(user) => user.clone(),
             None => {
                 if std::env::var("SUDO_USER").is_ok() || std::env::var("USER").unwrap_or_default() == "root" {
                     "root".to_string()
@@ -494,19 +500,78 @@ async fn main() -> Result<()> {
             }
         };
         
-        ConnectionConfig::new(
+        let connection_config = ConnectionConfig::new(
             "Command Line".to_string(),
-            args.host,
+            args.host.clone(),
             args.port,
             username,
-            args.password.unwrap_or_default(),
-            args.database,
-        )
-    } else {
-        // Show connection selector
-        show_connection_selector()?
-    };
+            args.password.clone().unwrap_or_default(),
+            args.database.clone(),
+        );
 
+        // Single attempt for command line args
+        match attempt_connection(&connection_config).await {
+            Ok(pool) => {
+                return run_application(pool, connection_config).await;
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to MySQL: {}", e);
+                eprintln!("Connection details: {}:{}@{}:{}", 
+                    connection_config.username, 
+                    if connection_config.password.is_empty() { "no-pass" } else { "***" },
+                    connection_config.host, 
+                    connection_config.port
+                );
+                return Err(e);
+            }
+        }
+    } else {
+        // Interactive mode - loop until connection succeeds or user quits
+        loop {
+            let connection_config = match show_connection_selector() {
+                Ok(config) => config,
+                Err(e) => {
+                    // User cancelled connection selection
+                    println!("Connection cancelled: {}", e);
+                    return Ok(());
+                }
+            };
+
+            // Attempt to create and test the connection
+            match attempt_connection(&connection_config).await {
+                Ok(pool) => {
+                    // Connection successful, proceed with the application
+                    return run_application(pool, connection_config).await;
+                }
+                Err(e) => {
+                    // Connection failed, show error and ask user what to do
+                    match handle_connection_error(&e, &connection_config).await? {
+                        ConnectionErrorAction::Retry => {
+                            // Retry with same connection config - for transient issues
+                            continue;
+                        }
+                        ConnectionErrorAction::ChangeConnection => {
+                            // Go back to connection selector
+                            continue;
+                        }
+                        ConnectionErrorAction::Quit => {
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+enum ConnectionErrorAction {
+    Retry,
+    ChangeConnection,
+    Quit,
+}
+
+async fn attempt_connection(connection_config: &ConnectionConfig) -> Result<Pool> {
     // Build connection options with UTF-8 charset
     let password = connection_config.password.clone();
     let mut opts_builder = OptsBuilder::new()
@@ -531,9 +596,120 @@ async fn main() -> Result<()> {
     // Test connection
     {
         let mut _conn = pool.get_conn()
-            .context("Failed to establish MySQL connection. Make sure MySQL is running and accessible.")?;
+            .context("Failed to establish MySQL connection")?;
     }
     
+    Ok(pool)
+}
+
+async fn handle_connection_error(error: &anyhow::Error, connection_config: &ConnectionConfig) -> Result<ConnectionErrorAction> {
+    // Setup terminal for error display
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    let result = loop {
+        terminal.draw(|f| {
+            let size = f.area();
+            
+            // Create main layout
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(3),
+                    Constraint::Min(8),
+                    Constraint::Length(6),
+                ])
+                .split(size);
+
+            // Title
+            let title = Paragraph::new("Connection Error")
+                .style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL));
+            f.render_widget(title, chunks[0]);
+
+            // Error details
+            let error_text = vec![
+                Line::from(Span::styled("Failed to connect to MySQL server", Style::default().fg(Color::Red))),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("Connection: ", Style::default().fg(Color::Yellow)),
+                    Span::raw(&connection_config.name),
+                ]),
+                Line::from(vec![
+                    Span::styled("Host: ", Style::default().fg(Color::Yellow)),
+                    Span::raw(format!("{}:{}", connection_config.host, connection_config.port)),
+                ]),
+                Line::from(vec![
+                    Span::styled("Username: ", Style::default().fg(Color::Yellow)),
+                    Span::raw(&connection_config.username),
+                ]),
+                Line::from(vec![
+                    Span::styled("SSL: ", Style::default().fg(Color::Yellow)),
+                    Span::raw(if connection_config.use_ssl { "Enabled" } else { "Disabled" }),
+                ]),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("Error: ", Style::default().fg(Color::Red)),
+                    Span::raw(format!("{}", error)),
+                ]),
+            ];
+
+            let error_widget = Paragraph::new(error_text)
+                .block(Block::default().borders(Borders::ALL).title("Error Details"))
+                .wrap(ratatui::widgets::Wrap { trim: true });
+            f.render_widget(error_widget, chunks[1]);
+
+            // Help/Options
+            let help_text = vec![
+                Line::from(vec![
+                    Span::styled("r", Style::default().fg(Color::Green)),
+                    Span::raw(": Retry same connection (for transient issues)"),
+                ]),
+                Line::from(vec![
+                    Span::styled("c", Style::default().fg(Color::Green)),
+                    Span::raw(": Choose different connection"),
+                ]),
+                Line::from(vec![
+                    Span::styled("q", Style::default().fg(Color::Green)),
+                    Span::raw(": Quit application"),
+                ]),
+            ];
+
+            let help = Paragraph::new(help_text)
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL).title("Options"));
+            f.render_widget(help, chunks[2]);
+        })?;
+
+        if let Event::Key(key) = event::read()? {
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Char('r') => break ConnectionErrorAction::Retry,
+                    KeyCode::Char('c') => break ConnectionErrorAction::ChangeConnection,
+                    KeyCode::Char('q') | KeyCode::Esc => break ConnectionErrorAction::Quit,
+                    _ => {}
+                }
+            }
+        }
+    };
+
+    // Restore terminal
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
+
+    Ok(result)
+}
+
+async fn run_application(pool: Pool, connection_config: ConnectionConfig) -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
