@@ -48,6 +48,20 @@ A modern, interactive MySQL client with a terminal interface inspired by Vim, bu
 - Automatically saves used connections
 - Intuitive interface for managing multiple connections
 - Auto-reconnect on connection loss
+- **SSL/TLS Support**: Toggle SSL encryption on/off per connection
+- Compatible with MySQL/MariaDB servers with SSL disabled
+
+#### Connection Form Fields
+When creating or editing a connection, configure the following:
+- **Name**: Display name for the connection
+- **Host**: MySQL server hostname or IP address
+- **Port**: MySQL server port (default: 3306)
+- **Username**: MySQL user account
+- **Password**: User password (not saved for security)
+- **Database**: Optional default database to select
+- **Use SSL**: Enable/disable SSL encryption (default: enabled)
+  - Set to "No" for servers with SSL disabled
+  - Equivalent to `mysql --ssl=false` in CLI
 
 ## 📁 File System Structure
 

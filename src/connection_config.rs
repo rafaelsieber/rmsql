@@ -13,6 +13,12 @@ pub struct ConnectionConfig {
     pub username: String,
     pub password: String,
     pub default_database: Option<String>,
+    #[serde(default = "default_use_ssl")]
+    pub use_ssl: bool,
+}
+
+fn default_use_ssl() -> bool {
+    true
 }
 
 impl ConnectionConfig {
@@ -25,6 +31,7 @@ impl ConnectionConfig {
             username,
             password,
             default_database,
+            use_ssl: true, // Default to SSL enabled for security
         }
     }
 }
@@ -119,14 +126,16 @@ impl ConnectionManager {
     }
 
     pub fn create_root_connection() -> ConnectionConfig {
-        ConnectionConfig::new(
-            "Root (Local)".to_string(),
-            "localhost".to_string(),
-            3306,
-            "root".to_string(),
-            String::new(),
-            None,
-        )
+        ConnectionConfig {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: "Root (Local)".to_string(),
+            host: "localhost".to_string(),
+            port: 3306,
+            username: "root".to_string(),
+            password: String::new(),
+            default_database: None,
+            use_ssl: true, // Default to SSL enabled
+        }
     }
 }
 

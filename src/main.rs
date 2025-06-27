@@ -5,7 +5,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use mysql::{Pool, OptsBuilder};
+use mysql::{Pool, OptsBuilder, SslOpts};
 use ratatui::{
     backend::CrosstermBackend,
     Terminal,
@@ -441,22 +441,21 @@ fn show_connection_selector() -> Result<ConnectionConfig> {
 
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
-                match key.code {
-                    KeyCode::Char('q') => {
-                        // Restore terminal before returning error
-                        disable_raw_mode()?;
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
-                        )?;
-                        terminal.show_cursor()?;
-                        return Err(anyhow::anyhow!("User quit connection selection"));
-                    }
-                    _ => {
-                        if let Some(config) = connection_ui.handle_key(key, &mut connection_manager)? {
-                            break config;
-                        }
+                // Check if we should handle 'q' for quitting or let the form handle it
+                if key.code == KeyCode::Char('q') && connection_ui.mode == connection_ui::ConnectionUIMode::List {
+                    // Only quit when in list mode, not in forms
+                    disable_raw_mode()?;
+                    execute!(
+                        terminal.backend_mut(),
+                        LeaveAlternateScreen,
+                        DisableMouseCapture
+                    )?;
+                    terminal.show_cursor()?;
+                    return Err(anyhow::anyhow!("User quit connection selection"));
+                } else {
+                    // Let the connection UI handle all other keys, including 'q' in forms
+                    if let Some(config) = connection_ui.handle_key(key, &mut connection_manager)? {
+                        break config;
                     }
                 }
             }
@@ -511,12 +510,20 @@ async fn main() -> Result<()> {
 
     // Build connection options with UTF-8 charset
     let password = connection_config.password.clone();
-    let opts = OptsBuilder::new()
+    let mut opts_builder = OptsBuilder::new()
         .ip_or_hostname(Some(connection_config.host.clone()))
         .tcp_port(connection_config.port)
         .user(Some(connection_config.username.clone()))
         .pass(if password.is_empty() { None } else { Some(password) })
         .init(vec!["SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci".to_string()]);
+    
+    // Configure SSL based on connection settings
+    if !connection_config.use_ssl {
+        // Disable SSL by setting empty SSL options
+        opts_builder = opts_builder.ssl_opts(None::<SslOpts>);
+    }
+    
+    let opts = opts_builder;
     
     // Create connection pool
     let pool = Pool::new(opts)

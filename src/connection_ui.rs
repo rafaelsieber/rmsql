@@ -25,6 +25,7 @@ pub enum InputField {
     Username,
     Password,
     Database,
+    UseSSL,
 }
 
 pub struct ConnectionUI {
@@ -202,6 +203,7 @@ impl ConnectionUI {
                 Constraint::Length(3),
                 Constraint::Length(3),
                 Constraint::Length(3),
+                Constraint::Length(3),
             ])
             .split(chunks[1]);
 
@@ -225,6 +227,9 @@ impl ConnectionUI {
             &InputField::Database
         );
 
+        let ssl_display = if self.temp_config.use_ssl { "Yes" } else { "No" };
+        self.draw_input_field(f, form_chunks[6], "Use SSL", ssl_display, &InputField::UseSSL);
+
         // Help
         let help_text = vec![
             Line::from(vec![
@@ -237,7 +242,9 @@ impl ConnectionUI {
             ]),
             Line::from(vec![
                 Span::styled("Ctrl+P", Style::default().fg(Color::Green)),
-                Span::raw(": Toggle password visibility"),
+                Span::raw(": Toggle password visibility | "),
+                Span::styled("Space", Style::default().fg(Color::Green)),
+                Span::raw(": Toggle SSL (on SSL field)"),
             ]),
         ];
 
@@ -373,8 +380,17 @@ impl ConnectionUI {
                     _ => {}
                 }
             }
+            KeyCode::Enter => {
+                if self.input_field == InputField::UseSSL {
+                    self.temp_config.use_ssl = !self.temp_config.use_ssl;
+                }
+            }
             KeyCode::Char(c) => {
-                self.input_char(c);
+                if c == ' ' && self.input_field == InputField::UseSSL {
+                    self.temp_config.use_ssl = !self.temp_config.use_ssl;
+                } else {
+                    self.input_char(c);
+                }
             }
             KeyCode::Backspace => {
                 self.delete_char();
@@ -484,18 +500,20 @@ impl ConnectionUI {
             InputField::Port => InputField::Username,
             InputField::Username => InputField::Password,
             InputField::Password => InputField::Database,
-            InputField::Database => InputField::Name,
+            InputField::Database => InputField::UseSSL,
+            InputField::UseSSL => InputField::Name,
         };
     }
 
     fn prev_field(&mut self) {
         self.input_field = match self.input_field {
-            InputField::Name => InputField::Database,
+            InputField::Name => InputField::UseSSL,
             InputField::Host => InputField::Name,
             InputField::Port => InputField::Host,
             InputField::Username => InputField::Port,
             InputField::Password => InputField::Username,
             InputField::Database => InputField::Password,
+            InputField::UseSSL => InputField::Database,
         };
     }
 
@@ -520,6 +538,15 @@ impl ConnectionUI {
                 }
                 if let Some(ref mut db) = self.temp_config.default_database {
                     db.push(c);
+                }
+            }
+            InputField::UseSSL => {
+                // Toggle SSL with 'y'/'n' or space
+                match c.to_ascii_lowercase() {
+                    'y' => self.temp_config.use_ssl = true,
+                    'n' => self.temp_config.use_ssl = false,
+                    ' ' => self.temp_config.use_ssl = !self.temp_config.use_ssl,
+                    _ => {}
                 }
             }
         }
@@ -547,6 +574,10 @@ impl ConnectionUI {
                         self.temp_config.default_database = None;
                     }
                 }
+            }
+            InputField::UseSSL => {
+                // Toggle SSL on backspace
+                self.temp_config.use_ssl = !self.temp_config.use_ssl;
             }
         }
     }
