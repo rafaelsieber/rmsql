@@ -11,15 +11,17 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    permissions: # <--- Adicione esta seção
-      contents: write # <--- Esta permissão é crucial para criar releases
-
+    permissions: # <--- MUITO IMPORTANTE: Esta seção deve estar aqui, indentada sob 'build'
+      contents: write # Concede permissão de escrita para criar o release e anexar o arquivo
+      # Você pode adicionar outras permissões se seu workflow precisar,
+      # mas 'contents: write' é o mínimo para releases.
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
+    
+    - name: Build Release Executable # Mudei o nome para refletir que é um build de release
+      run: cargo build --verbose --release # <--- Adicionei --release para otimizar o executável
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -37,6 +39,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # URL para upload do asset
-        asset_path: target/release/rmsql
-        asset_name: rmsql
-        asset_content_type: application/x-pie-executable
+        asset_path: target/release/rmsql # Caminho para o seu executável compilado
+        asset_name: rmsql # Nome do asset no release
+        asset_content_type: application/octet-stream # <--- Tipo de conteúdo genérico para binários
